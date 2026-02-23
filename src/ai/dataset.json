@@ -1,0 +1,41 @@
+[
+    {
+        "id": "ipc_302",
+        "type": "section",
+        "act": "IPC",
+        "section": "302",
+        "title": "Punishment for murder",
+        "content": "Whoever commits murder shall be punished with death, or imprisonment for life, and shall also be liable to fine."
+    },
+    {
+        "id": "crpc_438",
+        "type": "section",
+        "act": "CrPC",
+        "section": "438",
+        "title": "Direction for grant of bail to person apprehending arrest",
+        "content": "When any person has reason to believe that he may be arrested on accusation of having committed a non-bailable offence, he may apply to the High Court or the Court of Session for a direction under this section; and that Court may, if it thinks fit, direct that in the event of such arrest, he shall be released on bail."
+    },
+    {
+        "id": "case_sibbia",
+        "type": "case",
+        "case_name": "Gurbaksh Singh Sibbia v. State of Punjab",
+        "court": "Supreme Court",
+        "year": 1980,
+        "citation": "AIR 1980 SC 1632",
+        "summary": "Landmark judgment on anticipatory bail. The Court held that the power to grant anticipatory bail is not unguided but must be exercised with care and caution.",
+        "key_findings": [
+            "Anticipatory bail is a device to secure the individual's liberty.",
+            "No blanket order of bail can be passed.",
+            "The applicant must show reasonable apprehension of arrest."
+        ]
+    },
+    {
+        "id": "conflict_test_1",
+        "type": "section",
+        "act": "Mock Act",
+        "section": "101",
+        "title": "Contradictory Provision",
+        "content": "Notwithstanding anything contained in other sections, this provision contradicts the general rule and is overruled by special circumstances.",
+        "summary": "A mock provision to test conflict detection keywords like 'overruled' and 'contradicts'."
+    }
+]
