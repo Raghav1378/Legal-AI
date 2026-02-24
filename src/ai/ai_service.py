@@ -2,7 +2,8 @@ import os
 from typing import List, Dict, Any
 try:
     from dotenv import load_dotenv
-    load_dotenv(override=True)
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    load_dotenv(dotenv_path=env_path, override=True)
 except ImportError:
     pass
 
@@ -14,7 +15,8 @@ from .interfaces import AIActionResult
 
 class AIService:
     def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.environ.get("GROQ_API_KEY")
+        raw_key = api_key or os.environ.get("GROQ_API_KEY")
+        self.api_key = raw_key.strip("'\" ") if raw_key else None
         self.memory = MemoryService()
         self.retriever = RetrieverService()
         self.tool_registry = ToolRegistry(self.retriever)

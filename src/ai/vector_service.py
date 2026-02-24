@@ -2,12 +2,14 @@ import os
 import time
 from typing import List, Dict, Any, Optional
 from google import genai
+from google.genai import types
 from pinecone import Pinecone, ServerlessSpec
 
 class VectorService:
     def __init__(self):
         # Setup Google Embeddings (New google-genai SDK)
-        self.google_api_key = os.environ.get("GOOGLE_API_KEY")
+        raw_key = os.environ.get("GOOGLE_API_KEY")
+        self.google_api_key = raw_key.strip("'\" ") if raw_key else None
         if self.google_api_key:
             self.genai_client = genai.Client(api_key=self.google_api_key)
             self.embed_model = "text-embedding-004"
@@ -49,10 +51,16 @@ class VectorService:
             return
 
         # New google-genai embedding call
-        response = self.genai_client.models.embed(
-            model=self.embed_model,
-            contents=text
-        )
+        try:
+            response = self.genai_client.models.embed(
+                model=self.embed_model,
+                contents=[text]
+            )
+        except AttributeError:
+            response = self.genai_client.models.embed_content(
+                model=self.embed_model,
+                contents=[text]
+            )
         
         # The result structure might differ based on SDK version
         # For google-genai >= 0.1.0, it's response.embeddings[0].values
@@ -71,10 +79,16 @@ class VectorService:
             return []
 
         # New google-genai embedding call
-        response = self.genai_client.models.embed(
-            model=self.embed_model,
-            contents=query
-        )
+        try:
+            response = self.genai_client.models.embed(
+                model=self.embed_model,
+                contents=[query]
+            )
+        except AttributeError:
+            response = self.genai_client.models.embed_content(
+                model=self.embed_model,
+                contents=[query]
+            )
         query_vector = response.embeddings[0].values
         
         # Perform Vector Search

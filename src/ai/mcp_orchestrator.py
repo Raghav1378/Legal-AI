@@ -5,10 +5,7 @@ import re
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-try:
-    from groq import Groq
-except ImportError:
-    Groq = None
+from groq import Groq
 
 from .tool_registry import ToolRegistry
 from .research_planner import ResearchPlanner
@@ -37,7 +34,7 @@ class MCPOrchestrator:
         self.tool_registry = tool_registry
         raw_key = api_key or os.environ.get("GROQ_API_KEY")
         self.api_key = raw_key.strip("'\" ") if raw_key else None
-        self.client = Groq(api_key=self.api_key) if Groq and self.api_key else None
+        self.client = Groq(api_key=self.api_key) if self.api_key else None
         self.repair_history: List[str] = []
 
     def run(self, chat_id: str, query: str, history: List[Dict[str, str]]) -> AIActionResult:
@@ -139,7 +136,7 @@ class MCPOrchestrator:
         }
 
     def _get_system_prompt(self) -> str:
-        return """You are an expert Indian Penal Code (IPC) legal reasoning engine.
+        return """You are an expert Indian Penal Code (IPC) legal reasoning engine powered by Groq.
 
         Your role is to analyze factual scenarios and determine the most legally appropriate IPC sections using strict legal hierarchy and element-based reasoning.
 
@@ -203,9 +200,16 @@ class MCPOrchestrator:
             tool_calls = self._parse_tool_calls(response_data)
 
             if tool_calls:
+                # Add one assistant message with all tool calls
+                messages.append({"role": "assistant", "content": "", "tool_calls": tool_calls})
+                
                 for tc in tool_calls:
-                    name = tc.get("name")
-                    args = tc.get("arguments", {})
+                    name = tc.get("name") or tc.get("function", {}).get("name")
+                    args = tc.get("arguments") or tc.get("function", {}).get("arguments", {})
+                    if isinstance(args, str):
+                        try: args = json.loads(args)
+                        except: pass
+                    
                     if not name or name not in self.tool_registry.tools: continue
                     
                     sig = f"{name}:{json.dumps(args, sort_keys=True)}"
@@ -216,10 +220,14 @@ class MCPOrchestrator:
                         result = self.tool_registry.execute_tool(name, args)
                         if name == "search_legal_database" and isinstance(result, list):
                             retrieved_docs.extend(result)
-                        messages.append({"role": "assistant", "content": None, "tool_calls": [tc]})
-                        messages.append({"role": "tool", "tool_call_id": tc.get("id"), "content": json.dumps(result, default=str)})
-                    except:
-                        pass
+                        messages.append({
+                            "role": "tool", 
+                            "tool_call_id": tc.get("id"), 
+                            "name": name,
+                            "content": json.dumps(result, default=str)
+                        })
+                    except Exception as e:
+                        print(f"Error executing tool {name} with args {args}: {e}")
                 loop_count += 1
             else:
                 break
@@ -228,13 +236,39 @@ class MCPOrchestrator:
     def _call_llm(self, messages: List[Dict[str, Any]], tools_enabled: bool = False) -> str:
         if not self.client: return "{}"
         try:
-            model = os.environ.get("GROQ_MODEL_NAME", "llama-3.1-8b-instant")
+            model = os.environ.get("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
+            
+            tools = None
+            if tools_enabled:
+                tools = []
+                for tool_name, tool_def in self.tool_registry.tools.items():
+                    tools.append({
+                        "type": "function",
+                        "function": {
+                            "name": tool_name,
+                            "description": tool_def['description'],
+                            "parameters": tool_def['parameters']
+                        }
+                    })
+
             completion = self.client.chat.completions.create(
-                model=model, messages=messages, temperature=0.1, max_tokens=4096,
-                response_format={"type": "json_object"} if not tools_enabled else None
+                model=model, 
+                messages=messages, 
+                temperature=0.1, 
+                max_tokens=4096,
+                tools=tools if tools_enabled else None,
+                tool_choice="auto" if tools_enabled else None
             )
-            return completion.choices[0].message.content or "{}"
-        except:
+            
+            message = completion.choices[0].message
+            if message.tool_calls:
+                # Return the native model-dumped tool calls to ensure perfect format compatibility
+                calls = [tc.model_dump() for tc in message.tool_calls]
+                return json.dumps({"tool_calls": calls})
+            
+            return message.content or "{}"
+        except Exception as e:
+            print(f"[GROQ ERR] {e}")
             return "{}"
 
     def _parse_tool_calls(self, content: str) -> List[Dict[str, Any]]:
