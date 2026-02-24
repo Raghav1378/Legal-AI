@@ -9,9 +9,6 @@ def with_retry(
     delay: float = 0.5,
     on_retry: Callable[[Exception], None] = None
 ) -> T:
-    """
-    Standard retry decorator/wrapper for agent execution stages.
-    """
     last_error = None
     for i in range(retries + 1):
         try:

@@ -12,10 +12,6 @@ class RetrieverService:
             self.dataset = json.load(f)
 
     def retrieve(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
-        """
-        Keyword-based RAG retrieval with structured metadata enrichment.
-        Returns docs enriched with parsed act_name and section.
-        """
         keywords = query.lower().split()
         results = []
         
@@ -38,74 +34,78 @@ class RetrieverService:
         results.sort(key=lambda x: x['score'], reverse=True)
         docs = [r['doc'] for r in results[:limit]]
         
-        # Enrich each doc with structured metadata
         return [self._enrich_doc(doc) for doc in docs]
 
     def _enrich_doc(self, doc: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Adds structured `_act_name` and `_section` fields to a document.
-        Uses dataset fields first, then attempts to parse from content/summary.
-        Returns None fields if not extractable. Never returns "Unknown".
-        """
         enriched = dict(doc)
+        act = doc.get('act')
+        section = str(doc.get('section')) if doc.get('section') is not None else None
 
-        # 1. Prefer explicit dataset fields
-        if doc.get('act') and doc.get('section'):
-            enriched['_act_name'] = doc['act']
-            enriched['_section'] = f"Section {doc['section']}"
+        if act and section:
+            enriched['_act_name'] = act
+            enriched['_section'] = self._normalize_section(section, act)
             return enriched
 
-        # 2. Attempt regex extraction from content + title
         text_to_parse = f"{doc.get('title', '')} {doc.get('content', '')} {doc.get('summary', '')}"
-        act_name, section = self._parse_provision_metadata(text_to_parse)
-        enriched['_act_name'] = act_name  # None if not found
-        enriched['_section'] = section    # None if not found
+        act_name, raw_section = self._parse_provision_metadata(text_to_parse)
+        
+        enriched['_act_name'] = act_name
+        enriched['_section'] = self._normalize_section(raw_section, act_name) if raw_section else None
         return enriched
 
-    def _parse_provision_metadata(self, text: str) -> Tuple[Optional[str], Optional[str]]:
-        """
-        Extract act_name and section from a legal explanation string.
+    def _normalize_section(self, section: Optional[str], act: Optional[str]) -> Optional[str]:
+        if not section:
+            return None
         
-        Examples handled:
-          "Section 154 of the Code of Criminal Procedure, 1973"
-          "u/s 302 IPC"
-          "Article 21 of the Constitution of India"
-        """
+        if section.lower() == "unknown":
+            return None
+
+        clean_section = str(section).strip()
+        
+        if clean_section.isdigit():
+            is_const = act and ("constitution" in act.lower() or "art" in act.lower())
+            prefix = "Article" if is_const else "Section"
+            return f"{prefix} {clean_section}"
+            
+        if not (clean_section.startswith("Section") or clean_section.startswith("Article")):
+            is_const = act and ("constitution" in act.lower() or "art" in act.lower())
+            prefix = "Article" if is_const else "Section"
+            return f"{prefix} {clean_section}"
+
+        return clean_section
+
+    def _parse_provision_metadata(self, text: str) -> Tuple[Optional[str], Optional[str]]:
         act_name = None
         section = None
 
-        # Pattern: "Section X of [Act Name]" or "Section X of the [Act Name]"
         pattern_full = re.search(
-            r'(Section\s+[\dA-Za-z]+(?:\([^)]*\))?)\s+of\s+(?:the\s+)?([A-Z][A-Za-z\s,]+(?:\d{4})?)',
+            r'([Ss]ection|[Aa]rticle)\s+([\dA-Za-z]+(?:\([^)]*\))?)\s+of\s+(?:the\s+)?([A-Z][A-Za-z\s,]+(?:\d{4})?)',
             text
         )
         if pattern_full:
-            section = pattern_full.group(1).strip()
-            act_name = pattern_full.group(2).strip().rstrip(',')
+            section = pattern_full.group(2).strip()
+            act_name = pattern_full.group(3).strip().rstrip(',')
             return act_name, section
 
-        # Pattern: "u/s X IPC" or "under Section X CrPC"
         pattern_short = re.search(
-            r'(?:u/s|under\s+[Ss]ection)\s+([\dA-Za-z]+)\s+([A-Z]{2,})',
+            r'(?:u/s|under\s+[Ss]ection|Art\.)\s+([\dA-Za-z]+)\s+([A-Z]{2,})',
             text
         )
         if pattern_short:
-            section = f"Section {pattern_short.group(1).strip()}"
+            section = pattern_short.group(1).strip()
             act_name = pattern_short.group(2).strip()
             return act_name, section
 
-        # Pattern: Bare "Section X" with an act acronym nearby (IPC/CrPC/etc.)
-        pattern_bare = re.search(r'(Section\s+[\dA-Za-z]+)', text)
+        pattern_bare = re.search(r'([Ss]ection|[Aa]rticle)\s+([\dA-Za-z]+)', text)
         act_acronym = re.search(r'\b(IPC|CrPC|CPC|IEA|NDPS|POCSO)\b', text)
         if pattern_bare:
-            section = pattern_bare.group(1).strip()
+            section = pattern_bare.group(2).strip()
             act_name = act_acronym.group(1) if act_acronym else None
             return act_name, section
 
         return None, None
 
     def get_all_content(self) -> str:
-        """Returns all dataset content as a single string for claim validation."""
         parts = []
         for doc in self.dataset:
             parts.append((doc.get('content') or '') + ' ' + (doc.get('summary') or ''))

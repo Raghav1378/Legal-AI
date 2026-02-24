@@ -5,7 +5,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-# Add the 'src' directory to sys.path to allow imports of the 'ai' package
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.append(current_dir)
@@ -19,7 +18,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,7 +25,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize AI Service
 ai_service = AIService()
 
 @app.get("/")
@@ -39,7 +36,6 @@ async def process_query(request: QueryRequest):
     try:
         start_time = time.time()
         result = ai_service.process_legal_query(request.chat_id, request.query)
-        execution_time = time.time() - start_time
         
         return {
             "structuredResponse": result["structuredResponse"],
@@ -59,6 +55,17 @@ async def process_query(request: QueryRequest):
 async def clear_history(chat_id: str):
     ai_service.clear_chat_history(chat_id)
     return {"status": "success", "message": f"Cleared history for {chat_id}"}
+
+@app.get("/history/{chat_id}")
+async def get_history(chat_id: str):
+    results = ai_service.get_chat_results(chat_id)
+    if not results:
+        return {"chat_id": chat_id, "history": [], "count": 0}
+    return {
+        "chat_id": chat_id,
+        "history": results,
+        "count": len(results)
+    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

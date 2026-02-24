@@ -3,13 +3,6 @@ from typing import List
 class ResearchPlanner:
     @staticmethod
     def plan(query: str) -> List[str]:
-        """
-        Research Planning Engine:
-        Breaks complex queries into sub-questions and identifies sources.
-        """
-        # MVP Logic: For now, we return the sub-queries based on common legal patterns.
-        # In a full implementation, this would call an LLM to generate the plan.
-        
         lower_query = query.lower()
         sub_questions = []
         

@@ -16,7 +16,6 @@ class CaseReference(BaseModel):
     @field_validator('year', mode='before')
     @classmethod
     def coerce_year(cls, v: Any) -> Optional[int]:
-        """Accept year as string '1986' or int 1986. Return None on failure."""
         if v is None:
             return None
         try:
