@@ -3,6 +3,8 @@ import json
 import os
 from typing import List, Dict, Any, Optional, Tuple
 
+from .vector_service import VectorService
+
 class RetrieverService:
     def __init__(self, dataset_path: str = None):
         if dataset_path is None:
@@ -10,19 +12,44 @@ class RetrieverService:
         
         with open(dataset_path, 'r') as f:
             self.dataset = json.load(f)
+        
+        # Initialize the new Vector Intelligence
+        self.vector_service = VectorService()
 
     def retrieve(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        # 1. Local Search (Keyword based - Fast for Statutes)
+        local_results = self._search_local(query, limit=limit)
+        
+        # 2. Vector Search (Semantic based - Master for Case Laws)
+        vector_results = []
+        try:
+            vector_results = self.vector_service.query_similar_judgments(query, limit=2)
+        except Exception as e:
+            print(f"[WARN] Vector search failed: {e}")
+
+        # Combine results
+        combined = local_results + vector_results
+        return [self._enrich_doc(doc) for doc in combined]
+
+    def _search_local(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
         keywords = query.lower().split()
         results = []
         
         for doc in self.dataset:
             score = 0
-            search_text = (
-                (doc.get('title') or "") + " " +
-                (doc.get('content') or "") + " " +
-                (doc.get('summary') or "") + " " +
-                (doc.get('section') or "")
-            ).lower()
+            
+            # Expanded search text to include new structured fields
+            fields_to_search = [
+                doc.get('title'),
+                doc.get('content'),
+                doc.get('summary'),
+                doc.get('section'),
+                doc.get('category'),
+                " ".join(doc.get('keywords', [])),
+                " ".join(doc.get('elements_required', []))
+            ]
+            
+            search_text = " ".join([str(f) for f in fields_to_search if f]).lower()
             
             for kw in keywords:
                 if kw in search_text:

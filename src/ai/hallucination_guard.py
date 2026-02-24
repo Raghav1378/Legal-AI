@@ -13,11 +13,25 @@ class HallucinationGuard:
     def __init__(self, retrieved_docs: List[Dict[str, Any]]):
         parts = []
         for doc in retrieved_docs:
-            parts.append((doc.get('content') or ''))
-            parts.append((doc.get('summary') or ''))
-            parts.append((doc.get('title') or ''))
+            parts.append(str(doc.get('content') or ''))
+            parts.append(str(doc.get('summary') or ''))
+            parts.append(str(doc.get('title') or ''))
+            
+            # Add new structured fields to the corpus
+            new_fields = [
+                'elements_required', 'mental_element', 'key_principles', 
+                'legal_issue', 'punishment', 'category'
+            ]
+            for field in new_fields:
+                val = doc.get(field)
+                if isinstance(val, list):
+                    parts.extend([str(i) for i in val])
+                elif val:
+                    parts.append(str(val))
+                    
             if isinstance(doc.get('key_findings'), list):
-                parts.extend(doc['key_findings'])
+                parts.extend([str(f) for f in doc['key_findings']])
+                
         self.corpus = ' '.join(parts).lower()
         self._has_sources = bool(retrieved_docs)
 

@@ -8,7 +8,19 @@ class ConflictDetector:
         critical_keywords = ['overruled', 'notwithstanding', 'distinguished', 'contradicts']
         
         for doc in documents:
-            text = (doc.get('content') or doc.get('summary') or "").lower()
+            # check the new explicit conflict_keywords field
+            explicit_keywords = doc.get('conflict_keywords', [])
+            if any(kw in explicit_keywords for kw in critical_keywords):
+                conflicts_found = True
+                break
+
+            # Fallback to existing logic
+            text = (
+                str(doc.get('content') or "") + " " + 
+                str(doc.get('summary') or "") + " " +
+                " ".join(doc.get('key_principles', []))
+            ).lower()
+            
             for kw in critical_keywords:
                 if kw in text:
                     conflicts_found = True

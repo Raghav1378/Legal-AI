@@ -4,29 +4,70 @@
         "type": "section",
         "act": "IPC",
         "section": "302",
-        "title": "Punishment for murder",
-        "content": "Whoever commits murder shall be punished with death, or imprisonment for life, and shall also be liable to fine."
+        "title": "Punishment for Murder",
+        "category": "Punishment",
+        "elements_required": [
+            "Commission of murder as defined under Section 300 IPC"
+        ],
+        "mental_element": [
+            "Intention",
+            "Knowledge"
+        ],
+        "punishment": "Death or imprisonment for life and fine",
+        "depends_on": [
+            "ipc_300"
+        ],
+        "overrides": [],
+        "keywords": [
+            "murder",
+            "punishment",
+            "death penalty",
+            "life imprisonment"
+        ]
     },
     {
         "id": "crpc_438",
         "type": "section",
         "act": "CrPC",
         "section": "438",
-        "title": "Direction for grant of bail to person apprehending arrest",
-        "content": "When any person has reason to believe that he may be arrested on accusation of having committed a non-bailable offence, he may apply to the High Court or the Court of Session for a direction under this section; and that Court may, if it thinks fit, direct that in the event of such arrest, he shall be released on bail."
+        "title": "Anticipatory Bail",
+        "category": "Procedural Law",
+        "elements_required": [
+            "Reasonable apprehension of arrest",
+            "Accusation of non-bailable offence",
+            "Application before High Court or Sessions Court"
+        ],
+        "mental_element": [],
+        "purpose": "Protection of individual liberty before arrest",
+        "related_cases": [
+            "case_sibbia"
+        ],
+        "keywords": [
+            "anticipatory bail",
+            "pre-arrest bail",
+            "non-bailable offence"
+        ]
     },
     {
         "id": "case_sibbia",
         "type": "case",
         "case_name": "Gurbaksh Singh Sibbia v. State of Punjab",
-        "court": "Supreme Court",
+        "court": "Supreme Court of India",
         "year": 1980,
         "citation": "AIR 1980 SC 1632",
-        "summary": "Landmark judgment on anticipatory bail. The Court held that the power to grant anticipatory bail is not unguided but must be exercised with care and caution.",
-        "key_findings": [
-            "Anticipatory bail is a device to secure the individual's liberty.",
-            "No blanket order of bail can be passed.",
-            "The applicant must show reasonable apprehension of arrest."
+        "legal_issue": "Scope and interpretation of anticipatory bail under Section 438 CrPC",
+        "key_principles": [
+            "Anticipatory bail protects personal liberty",
+            "No blanket anticipatory bail orders",
+            "Judicial discretion must be exercised carefully"
+        ],
+        "interprets_section": [
+            "crpc_438"
+        ],
+        "keywords": [
+            "anticipatory bail",
+            "liberty",
+            "judicial discretion"
         ]
     },
     {
@@ -35,7 +76,17 @@
         "act": "Mock Act",
         "section": "101",
         "title": "Contradictory Provision",
-        "content": "Notwithstanding anything contained in other sections, this provision contradicts the general rule and is overruled by special circumstances.",
-        "summary": "A mock provision to test conflict detection keywords like 'overruled' and 'contradicts'."
+        "category": "Test Provision",
+        "content": "This provision contradicts general rules and may be overruled in special circumstances.",
+        "conflict_keywords": [
+            "contradicts",
+            "overruled",
+            "notwithstanding"
+        ],
+        "keywords": [
+            "conflict",
+            "override",
+            "exception"
+        ]
     }
 ]
