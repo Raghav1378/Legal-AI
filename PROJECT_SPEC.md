@@ -75,7 +75,7 @@ The system supports multiple research tools registered in `ToolRegistry`.
 
 | Tool | Purpose |
 |---|---|
-| `search_legal_database` | Keyword search across `dataset.json` |
+| `search_legal_database` | Keyword search across `dataset.json` + Semantic search across `chroma_db` |
 | `detect_conflicts` | Scans docs for contradictory legal keywords |
 
 **Retrieval Capabilities:**

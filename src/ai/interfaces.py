@@ -3,44 +3,46 @@ from datetime import datetime
 
 class LegalProvision(TypedDict):
     act_name: str
-    section: str
-    explanation: str
+    description: str
+
+class ApplicableSection(TypedDict):
+    section_number: str
+    section_title: str
+    section_summary: str
 
 class CaseReference(TypedDict):
-    case_name: str
+    case_title: str
     court: Optional[str]
     year: Optional[int]
-    citation_reference: Optional[str]
+    holding_summary: str
+
+class Precedent(TypedDict):
+    case_title: str
+    principle_established: str
 
 class Citation(TypedDict):
-    title: str
-    court: Optional[str]
-    year: Optional[int]
-    source: str
-    url: Optional[str]
+    citation_reference: str
+    source_url: Optional[str]
 
 class LegalResponse(TypedDict):
+    response_id: str
     issue_summary: str
     relevant_legal_provisions: List[LegalProvision]
-    applicable_sections: List[str]
+    applicable_sections: List[ApplicableSection]
     case_references: List[CaseReference]
     key_observations: List[str]
     legal_interpretation: str
-    precedents: List[str]
+    precedents: List[Precedent]
     conclusion: str
     citations: List[Citation]
-    conflicts_detected: bool
-    confidence_score: int
+    confidence_score: float
+    generated_at: str
+    jurisdiction: str
 
 class AgentExecutionLog(TypedDict):
-    chat_id: str
     agentName: str
     executionTimeMs: int
     status: str  # 'SUCCESS' | 'FAILED'
-    error_message: Optional[str]
-    confidence_score: Optional[int]
-    conflicts_detected: Optional[bool]
-    created_at: datetime
 
 class AIActionResult(TypedDict):
     structuredResponse: LegalResponse

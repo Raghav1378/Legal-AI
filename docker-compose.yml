@@ -1,0 +1,53 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Legal AI – Docker Compose
+# ─────────────────────────────────────────────────────────────────────────────
+# Services:
+#   qdrant   — vector store (persisted to ./qdrant_storage)
+#   api      — FastAPI Legal AI backend
+#
+# Quick start:
+#   docker compose up -d qdrant      # start only Qdrant (for local dev)
+#   docker compose up -d             # start everything
+#
+# Volumes:
+#   ./qdrant_storage  — Qdrant on-disk persistence
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: legal_ai_qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC
+    volumes:
+      - ./qdrant_storage:/qdrant/storage:z
+    environment:
+      # Optional: set QDRANT__SERVICE__API_KEY for auth (also set QDRANT_API_KEY in .env)
+      QDRANT__LOG_LEVEL: INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: legal_ai_api
+    restart: unless-stopped
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    env_file:
+      - src/ai/.env
+    environment:
+      # Override Qdrant host to use Docker service name
+      QDRANT_HOST: qdrant
+      QDRANT_PORT: "6333"
+    volumes:
+      - .:/app
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload

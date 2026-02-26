@@ -1,0 +1,47 @@
+{
+  "response_id": "fcdbe129-7369-47bc-9e06-12c0d6f19c74",
+  "issue_summary": "This query concerns the application of Indian statutory law. The analysis examines the relevant statutory provisions, judicial interpretations, and applicable legal principles under Indian jurisdiction.",
+  "relevant_legal_provisions": [
+    {
+      "act_name": null,
+      "description": "No directly applicable provisions identified in retrieved corpus."
+    }
+  ],
+  "applicable_sections": [
+    {
+      "section_number": "N/A",
+      "section_title": "Not Identified",
+      "section_summary": "No specific sections verified from retrieved data. General statutory analysis provided."
+    }
+  ],
+  "case_references": [
+    {
+      "case_title": "Insufficient verified case references found.",
+      "court": null,
+      "year": null,
+      "holding_summary": "No verified case law available in retrieved corpus."
+    }
+  ],
+  "key_observations": [
+    "The response is based on established legal knowledge and may require independent verification.",
+    "Consult primary sources for authoritative statutory and judicial analysis."
+  ],
+  "legal_interpretation": "The applicable statutory provisions (N/A) establish the legal framework governing this matter. These provisions must be read in conjunction with established judicial interpretations and constitutional principles to determine their scope and application. The legislative intent behind these provisions reflects the policy objectives of the Indian legal system in regulating the subject area.",
+  "precedents": [
+    {
+      "case_title": "No binding precedents identified.",
+      "principle_established": "No binding precedents identified from available data."
+    }
+  ],
+  "conclusion": "The query is governed by N/A under Indian law. The legal position is established through these statutory provisions and their judicial interpretation. Practitioners should verify specific citations for the most current judicial developments.",
+  "citations": [
+    {
+      "citation_reference": "No verified citations available from retrieval.",
+      "source_url": "https://www.indiacode.nic.in/bitstream/123456789/15351/1/iea_1872.pdf"
+    }
+  ],
+  "confidence_score": 0.6,
+  "analysis_limitations": "No binding case law was identified in the retrieved corpus. Statutory analysis is complete; precedent verification is recommended.",
+  "generated_at": "2026-02-26T06:14:34.738261Z",
+  "jurisdiction": "India"
+}

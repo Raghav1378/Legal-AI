@@ -4,14 +4,18 @@ from datetime import datetime
 
 class LegalProvision(BaseModel):
     act_name: Optional[str] = None
-    section: Optional[str] = None
-    explanation: str
+    description: str
+
+class ApplicableSection(BaseModel):
+    section_number: str
+    section_title: str
+    section_summary: str
 
 class CaseReference(BaseModel):
-    case_name: str
+    case_title: str
     court: Optional[str] = None
     year: Optional[int] = None
-    citation_reference: Optional[str] = None
+    holding_summary: str
 
     @field_validator('year', mode='before')
     @classmethod
@@ -22,36 +26,30 @@ class CaseReference(BaseModel):
             return int(v)
         except (ValueError, TypeError):
             return None
+
+class Precedent(BaseModel):
+    case_title: str
+    principle_established: str
 
 class Citation(BaseModel):
-    title: str
-    court: Optional[str] = None
-    year: Optional[int] = None
-    source: str = "General Law"
-    url: Optional[str] = None
-
-    @field_validator('year', mode='before')
-    @classmethod
-    def coerce_year(cls, v: Any) -> Optional[int]:
-        if v is None:
-            return None
-        try:
-            return int(v)
-        except (ValueError, TypeError):
-            return None
+    citation_reference: str
+    source_url: Optional[str] = None
 
 class LegalResponseSchema(BaseModel):
+    response_id: str
     issue_summary: str
     relevant_legal_provisions: List[LegalProvision] = Field(default_factory=list)
-    applicable_sections: List[str] = Field(default_factory=list)
+    applicable_sections: List[ApplicableSection] = Field(default_factory=list)
     case_references: List[CaseReference] = Field(default_factory=list)
     key_observations: List[str] = Field(default_factory=list)
     legal_interpretation: str
-    precedents: List[str] = Field(default_factory=list)
+    precedents: List[Precedent] = Field(default_factory=list)
     conclusion: str
     citations: List[Citation] = Field(default_factory=list)
-    conflicts_detected: bool = False
-    confidence_score: int = 30
+    confidence_score: float = 0.0
+    analysis_limitations: Optional[str] = None
+    generated_at: str
+    jurisdiction: str = "India"
 
 class QueryRequest(BaseModel):
     chat_id: str
