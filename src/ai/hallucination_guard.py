@@ -65,6 +65,9 @@ class HallucinationGuard:
             return response, 0, precedent_contamination, warnings
 
         original_observations = response.get('key_observations', [])
+        if isinstance(original_observations, str):
+            original_observations = [original_observations]
+            
         validated_observations = []
         for obs in original_observations:
             if self._is_supported(obs):

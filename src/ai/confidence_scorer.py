@@ -30,31 +30,23 @@ class ConfidenceScorer:
         has_web_sources: bool = False,
         is_citations_empty: bool = False
     ) -> int:
-        score = 70
+        score = 1.0
 
-        if num_agreeing_sources > 1:
-            score += ConfidenceScorer.BONUS_AGREEING_SOURCES
-        if has_statute_citation:
-            score += ConfidenceScorer.BONUS_STATUTORY_CITATION
-        if has_case_citation:
-            score += ConfidenceScorer.BONUS_CASE_CITATION
-        if has_web_sources:
-            score += ConfidenceScorer.BONUS_WEB_SOURCES
-
-        if conflicts_detected:
-            score -= ConfidenceScorer.PENALTY_CONFLICT
-
-        # If web sources were found, we don't treat retrieval as "empty" even if DB was 0
-        is_truly_empty = empty_retrieval and not has_web_sources
-        if is_truly_empty:
-            score -= ConfidenceScorer.PENALTY_EMPTY_RETRIEVAL
-
-        score -= json_repairs * ConfidenceScorer.PENALTY_JSON_REPAIR
-        score -= hallucinations_removed * ConfidenceScorer.PENALTY_HALLUCINATION
-        score -= metadata_failures * ConfidenceScorer.PENALTY_METADATA_FAILURE
-        score -= precedent_contaminations * ConfidenceScorer.PENALTY_PRECEDENT_CONTAMINATION
-
+        if not has_statute_citation:
+            score -= 0.4
+            
+        if not has_case_citation:
+            score -= 0.2
+            
         if is_citations_empty:
-            score -= ConfidenceScorer.PENALTY_EMPTY_CITATIONS
+            score -= 0.2
+            
+        # Interpretation is generic if it triggered json repairs or empty retrieval
+        interpretation_is_generic = (json_repairs > 0) or empty_retrieval
+        if interpretation_is_generic:
+            score -= 0.2
 
-        return max(ConfidenceScorer.FLOOR, min(ConfidenceScorer.CEILING, score))
+        final_score = max(score, 0.1)
+        
+        # Return as an integer 0-100 because mcp_orchestrator does: `float(final_confidence) / 100.0`
+        return int(final_score * 100)
