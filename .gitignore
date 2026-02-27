@@ -44,3 +44,6 @@ Thumbs.db
 .agent/
 !.agent/workflows/
 test_results.log
+
+# Database
+qdrant_local/
