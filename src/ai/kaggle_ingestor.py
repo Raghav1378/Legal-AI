@@ -27,7 +27,12 @@ except ImportError:
 import fitz  # PyMuPDF
 from tqdm import tqdm
 
-from .vector_service import LegalVectorStore
+try:
+    from .vector_service import LegalVectorStore
+except ImportError:
+    import sys
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from ai.vector_service import LegalVectorStore
 
 logger = logging.getLogger(__name__)
 

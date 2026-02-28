@@ -158,24 +158,20 @@ class MCPOrchestrator:
         - NDPS Act, Arms Act, IT Act, POCSO Act, and other special statutes
         - Landmark Supreme Court and High Court precedents
 
-        RESEARCH PHASE — TOOL USE ONLY:
-        You have TWO retrieval tools. Use them in this order:
+        RESEARCH PHASE — MULTI-SOURCE RETRIEVAL:
+        You have retrieval tools to build a comprehensive legal response. You MUST:
 
-        1. search_legal_database — searches the OFFLINE Qdrant vector database.
-           Call this FIRST for every query.
-
-        2. live_web_search — searches the LIVE internet (authoritative Indian legal
-           sites: indiankanoon.org, sci.gov.in, livelaw.in, barandbench.com, indiacode.nic.in).
-           Call this when ANY of the following are true:
-             • search_legal_database returns empty or very few results.
-             • The query mentions 'latest', 'recent', '2023', '2024', '2025' or newer events.
-             • The query involves recent amendments, new PIL filings, or fresh judgments.
+        1. search_legal_database — Search the OFFLINE Qdrant vector database (statutes + Kaggle judgments).
+        
+        2. live_web_search — Search the LIVE internet (authoritative legal domains).
 
         RULES:
+        - For EVERY query, you MUST use BOTH tools to provide a "triangulated" answer (Statute + Case Law + Latest Updates).
+        - Use search_legal_database FIRST, then live_web_search.
+        - DO NOT merge function names with arguments. Correct: name: "tool", args: {"q": "..."}.
         - DO NOT provide any text commentary when calling a tool.
-        - DO NOT use XML tags like <function> or <call>.
-        - You may call BOTH tools in the same research session if needed.
-        - Stop calling tools once you have sufficient context.
+        - DO NOT use XML tags like <function> or <call> unless specifically instructed.
+        - Stop once you have gathered sufficient evidence from all sources.
         """
         else:
             return """You are an Indian Legal Intelligence Engine operating inside a professional legal research platform.
@@ -381,34 +377,43 @@ Required Output Format:
 
     def _parse_tool_calls(self, content: str) -> List[Dict[str, Any]]:
         calls = []
+        # 1. Check for standard JSON structure
         try:
             data = json.loads(content)
-            if "tool_calls" in data: return data["tool_calls"]
-            if "name" in data and "arguments" in data: return [data]
+            if isinstance(data, dict):
+                if "tool_calls" in data: return data["tool_calls"]
+                if "name" in data and "arguments" in data: return [data]
         except Exception:
             pass
 
-        import re
-        # Groq might output: <function=search_legal_database>{"query": "..."}</function>
-        # Or: <function=search_legal_database{"query": "..."}</function>
-        matches = re.finditer(r'<function=([a-zA-Z0-9_]+)(?:>(.*?)|\s*(.*?))</function>', content, re.DOTALL)
+        # 2. Handle Groq/Llama-3 malformed tags <function=name>{"args"}
+        # This matches <function=name>args</function> or <function=name args</function>
+        matches = re.finditer(r'<function=([a-zA-Z0-9_]+)[^>]*>(.*?)</function>', content, re.DOTALL)
         for match in matches:
             name = match.group(1)
-            args_str = match.group(2) or match.group(3) or "{}"
+            args_str = match.group(2).strip()
             try:
                 args = json.loads(args_str)
                 calls.append({"name": name, "arguments": args})
             except Exception:
-                pass
-                
-        # Handle just plain JSON array of tool calls sometimes returned as text
+                # If JSON fails, try to find a JSON-like block in the string
+                json_match = re.search(r'\{.*\}', args_str, re.DOTALL)
+                if json_match:
+                    try:
+                        args = json.loads(json_match.group(0))
+                        calls.append({"name": name, "arguments": args})
+                    except Exception: pass
+        
+        # 3. Handle the "merged" case: name{"query": ...}
         if not calls:
-             try:
-                 data = json.loads(content)
-                 if isinstance(data, list) and len(data) > 0 and "name" in data[0]:
-                     return data
-             except Exception:
-                 pass
+             merged_match = re.search(r'([a-zA-Z0-9_]+)(\{.*\})', content, re.DOTALL)
+             if merged_match:
+                 name = merged_match.group(1)
+                 args_str = merged_match.group(2)
+                 try:
+                     args = json.loads(args_str)
+                     calls.append({"name": name, "arguments": args})
+                 except Exception: pass
 
         return calls
 

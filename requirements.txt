@@ -8,3 +8,5 @@ qdrant-client[fastembed]
 pymupdf
 tqdm
 kaggle
+sentence-transformers
+torch

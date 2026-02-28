@@ -32,8 +32,8 @@ try:
 except ImportError:
     pass
 
-# ── Google Generative AI (embeddings) ────────────────────────────────────────
-from google import genai as google_genai
+# ── Sentence Transformers (embeddings) ───────────────────────────────────────
+from sentence_transformers import SentenceTransformer
 
 # ── Qdrant ───────────────────────────────────────────────────────────────────
 from qdrant_client import QdrantClient
@@ -53,9 +53,9 @@ logger = logging.getLogger(__name__)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 COLLECTION_NAME = "legal_documents"
-DEFAULT_EMBED_MODEL = "models/gemini-embedding-001"
-# Gemini embedding-001 produces 3072-dim vectors; we detect dynamically on first embed.
-FALLBACK_VECTOR_DIM = 3072
+DEFAULT_EMBED_MODEL = "Qwen/Qwen3-Embedding-0.6B"
+# Qwen3-Embedding-0.6B typically produces 1536-dim vectors (or up to 3584 depending on max pooling, we detect dynamically)
+FALLBACK_VECTOR_DIM = 1536
 
 
 def _strip(value: Optional[str]) -> Optional[str]:
@@ -133,15 +133,21 @@ class LegalVectorStore:
             self._qdrant = QdrantClient(path=local_path)
             logger.warning("[QDRANT] Docker not found. Falling back to LOCAL STORAGE at: %s", local_path)
 
-        # ── Google Embedding client ───────────────────────────────────────
-        raw_google_key = _strip(os.environ.get("GOOGLE_API_KEY"))
-        if raw_google_key:
-            self._genai = google_genai.Client(api_key=raw_google_key)
-            self._embed_model = DEFAULT_EMBED_MODEL
-        else:
-            self._genai = None
+        # ── Sentence Transformer Embedding client ─────────────────────────
+        try:
+            # Optionally use HF_TOKEN from environment if set
+            hf_token = _strip(os.environ.get("HF_TOKEN"))
+            
+            logger.info(f"[QDRANT] Loading embedding model: {DEFAULT_EMBED_MODEL}...")
+            # Initialize the local SentenceTransformer model
+            self._embed_model = SentenceTransformer(
+                DEFAULT_EMBED_MODEL, 
+                token=hf_token if hf_token else None
+            )
+            logger.info("[QDRANT] Embedding model loaded successfully.")
+        except Exception as e:
             self._embed_model = None
-            logger.warning("[QDRANT] No GOOGLE_API_KEY — embeddings disabled.")
+            logger.error(f"[QDRANT] Failed to load embedding model: {e}")
 
         # Ensure collection exists (lazy creation with correct params)
         self._ensure_collection()
@@ -150,14 +156,13 @@ class LegalVectorStore:
 
     def _embed(self, text: str) -> List[float]:
         """Return a float vector for *text*, or [] on failure."""
-        if not self._genai or not self._embed_model:
+        if not self._embed_model:
             return []
         try:
-            response = self._genai.models.embed_content(
-                model=self._embed_model,
-                contents=text,
-            )
-            vector: List[float] = list(response.embeddings[0].values)
+            # Add instruction prefix if required by some models (Qwen generally handles raw text fine, 
+            # but we pass it directly as per standard sentence-transformers usage)
+            vector = self._embed_model.encode(text).tolist()
+            
             # Cache dimension from first successful embed
             if self._vector_dim is None and vector:
                 self._vector_dim = len(vector)
