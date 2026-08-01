@@ -37,7 +37,7 @@ def verify_migration():
         filters={"year": 2024}
     )
     
-    if results and any(r['metadata']['year'] == 2024 for r in results):
+    if results and any(r.get('year') == 2024 for r in results):
         print(f"[SUCCESS] Filtered Search (Found {len(results)} matches)")
     else:
         print("[ERROR] Filtered Search")
